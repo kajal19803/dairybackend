@@ -7,8 +7,8 @@ const orderSchema = new mongoose.Schema({
     type: String,
     default: 'PENDING',
   },
-  customerEmail: String,          // ✅ Add this
-  status: { type: String },       // ✅ Add this if you're using it separately
+  customerEmail: String,          
+  status: { type: String },      
   createdAt: {
     type: Date,
     default: Date.now,

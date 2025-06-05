@@ -17,7 +17,7 @@ const createPaymentLink = async (req, res) => {
       customer_email: 'test@example.com',
       customer_phone: '9999999999'
     },
-    return_url: 'http://localhost:5173/ordersuccess'
+    return_url: 'https://dairyfrontend.onrender.com/ordersuccess'
   };
 
   try {
