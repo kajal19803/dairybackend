@@ -1,33 +1,29 @@
 const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  orderId: { type: String, required: true }, // ✅ this line must be there
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   items: [
     {
-      id: String,
-      name: String,
-      price: String,
-      quantity: Number,
-      image: String,
-    },
+      productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+      quantity: { type: Number, required: true },
+      price: { type: Number, required: true },
+    }
   ],
-  totalPrice: Number,
+  totalPrice: { type: Number, required: true },
   address: {
     fullName: String,
     street: String,
     city: String,
     state: String,
     zip: String,
-    phone: String,
+    
   },
-  status: { type: String, default: 'Pending' },
-  createdAt: { type: Date, default: Date.now },
-});
+  status: { type: String, default: 'pending' },
+  phone: { type: String, required: true },
+}, { timestamps: true });
 
-// ✅ Declare model first
-const Order = mongoose.model('Order', orderSchema);
+module.exports = mongoose.model('Order', orderSchema);
 
-// ✅ Then export it
-module.exports = Order;
 
 

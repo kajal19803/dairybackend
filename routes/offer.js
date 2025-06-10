@@ -5,6 +5,9 @@ const Product = require('../models/Product');
 const User = require('../models/User');
 const nodemailer = require('nodemailer');
 
+// Load environment variables
+require('dotenv').config();
+
 // Setup nodemailer transport (Gmail + App Password)
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -48,7 +51,7 @@ router.post('/add', async (req, res) => {
         <h2>${title}</h2>
         <p>${description}</p>
         <p><strong>Discount:</strong> ${discount}</p>
-        <a href="https://dairyfrontend.onrender.com${offer.productLink}">👉 View Product</a>
+        <a href="${process.env.FRONTEND_URL}${offer.productLink}">👉 View Product</a>
       `,
     };
 
