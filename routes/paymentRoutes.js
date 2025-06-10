@@ -1,5 +1,7 @@
 const express = require('express');
 const crypto = require('crypto');
+const { authMiddleware } = require('../middleware/authMiddleware');
+
 
 const router = express.Router();
 
@@ -32,7 +34,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), (req, res) =>
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
-router.get('/my-orders', authMiddleware, async (req, res) => {
+router.get('/my-orders', authMiddleware , async (req, res) => {
   try {
     const userId = req.user.id;
     const orders = await Order.find({ userId }).sort({ createdAt: -1 });
