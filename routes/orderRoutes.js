@@ -66,7 +66,8 @@ router.post('/payment/create-link', authMiddleware, async (req, res) => {
         customer_phone: phone ? phone.toString() : user.phone?.toString(),
 
       },
-      return_url: `${process.env.FRONTEND_URL}/paymentstatus?order_id=${orderId}&order_token={{order_token}}&order_status={{order_status}}`,
+      return_url: `${process.env.FRONTEND_URL}/paymentstatus?order_id=${orderId}&order_token={order_token}&order_status={order_status}`,
+
     };
 
     const headers = {

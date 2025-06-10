@@ -1,53 +1,56 @@
 const express = require('express');
-const cors = require('cors');
+const cors = require ('cors');
 require('dotenv').config();
 const axios = require('axios');
 const mongoose = require('mongoose');
 const { OAuth2Client } = require('google-auth-library');
-const User = require('./models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const path = require('path');
+
 
 const emailOtpRoute = require('./routes/emailOtp');
-const orderRoutes = require('./routes/orderRoutes'); // ✅ Includes payment now
+const orderRoutes = require('./routes/orderRoutes');
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/product');
 const offerRoutes = require('./routes/offer');
+const paymentRoutes = require('./routes/paymentRoutes');
+const User = require('./models/User');
 
+const app = express();
 const JWT_SECRET = process.env.JWT_SECRET;
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-const app = express();
-const path = require('path');
+app.use('/api/payment', paymentRoutes);
+
 
 app.use(cors({
-  origin: `${process.env.FRONTEND_URL}`,
-  credentials: true,
+  origin: process.env.FRONTEND_URL,
+  credentials: true
 }));
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
-// MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
-.then(() => console.log('✅ MongoDB connected'))
-.catch(err => console.error('❌ MongoDB connection error:', err));
+.then(() => console.log(' MongoDB connected'))
+.catch(err => console.error(' MongoDB connection error:', err));
 
-// Root route
+
 app.get('/', (req, res) => {
-  res.send('Backend is running ✅');
+  res.send(' Backend is running');
 });
 
-// Routes
+
 app.use('/api/auth', authRoutes);
 app.use('/api/email-otp', emailOtpRoute);
-app.use('/api/orders', orderRoutes); // ✅ Includes order + payment
+app.use('/api/orders', orderRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/offers', offerRoutes);
-app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
-// Google OAuth Login
+
 app.post('/api/auth/google', async (req, res) => {
   try {
     const { token } = req.body;
@@ -55,21 +58,18 @@ app.post('/api/auth/google', async (req, res) => {
       idToken: token,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
+
     const payload = ticket.getPayload();
     const { email, name, picture } = payload;
 
     let user = await User.findOne({ email });
     if (!user) {
-      user = new User({
-        name,
-        email,
-        password: '',
-        image: picture
-      });
+      user = new User({ name, email, password: '', image: picture });
       await user.save();
     }
 
     const authToken = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+
     res.json({ token: authToken, user });
   } catch (err) {
     console.error('Google Auth Error:', err);
@@ -77,14 +77,12 @@ app.post('/api/auth/google', async (req, res) => {
   }
 });
 
-// Manual Register
+
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { name, email, password } = req.body;
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists with this email' });
-    }
+    if (existingUser) return res.status(400).json({ message: 'User already exists' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({ name, email, password: hashedPassword });
@@ -103,19 +101,15 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-// Manual Login
+
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
-    if (!user || !user.password) {
-      return res.status(400).json({ message: 'Invalid email or password' });
-    }
+    if (!user || !user.password) return res.status(400).json({ message: 'Invalid email or password' });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid email or password' });
-    }
+    if (!isMatch) return res.status(400).json({ message: 'Invalid email or password' });
 
     const token = jwt.sign({ id: user._id, email: user.email, isAdmin: user.isAdmin || false }, JWT_SECRET, { expiresIn: '7d' });
 
@@ -134,7 +128,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Check user exists
+
 app.post('/api/auth/check-user', async (req, res) => {
   try {
     const { email } = req.body;
@@ -146,7 +140,7 @@ app.post('/api/auth/check-user', async (req, res) => {
   }
 });
 
-// Get user info
+
 app.get('/api/user', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -155,8 +149,8 @@ app.get('/api/user', async (req, res) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await User.findById(decoded.id).select('-password');
-
     if (!user) return res.status(404).json({ message: 'User not found' });
+
     res.json(user);
   } catch (error) {
     console.error('Get user error:', error);
@@ -164,7 +158,7 @@ app.get('/api/user', async (req, res) => {
   }
 });
 
-// Change password
+
 app.post('/api/auth/change-password', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -187,12 +181,11 @@ app.post('/api/auth/change-password', async (req, res) => {
   }
 });
 
-// Reset password (after OTP verify)
+
 app.post('/api/auth/reset-password', async (req, res) => {
   try {
     const { email, newPassword } = req.body;
     const user = await User.findOne({ email });
-
     if (!user || !user.password) {
       return res.status(400).json({ message: 'Cannot reset password for this user' });
     }
