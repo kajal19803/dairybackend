@@ -68,8 +68,9 @@ router.post('/payment/create-link', authMiddleware, async (req, res) => {
       },
       return_url: `${process.env.FRONTEND_URL}/paymentstatus?order_id=${orderId}&order_token={order_token}&order_status={order_status}`,
 
-    };
 
+    };
+    console.log("📤 Sending to Cashfree:", data);
     const headers = {
       'x-client-id': process.env.CASHFREE_APP_ID,
       'x-client-secret': process.env.CASHFREE_SECRET,
@@ -85,8 +86,7 @@ router.post('/payment/create-link', authMiddleware, async (req, res) => {
       return res.status(500).json({ error: 'Cashfree did not return a payment link' });
     }
 
-    // ✅ Removed order saving here — it's already stored via `/orders`
-
+    
     res.status(200).json({ payment_link: paymentLink, orderId });
   } catch (error) {
     const errData = error.response?.data || error.message;

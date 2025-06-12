@@ -1,12 +1,13 @@
 const express = require('express');
 const crypto = require('crypto');
 const { authMiddleware } = require('../middleware/authMiddleware');
+const Order = require('../models/Order');
 
 
 const router = express.Router();
 
 // Raw body parser is needed for webhook verification
-router.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+router.post ('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   try {
     const signature = req.headers['x-cashfree-signature'];
     const secret = process.env.CASHFREE_CLIENT_SECRET;
@@ -34,14 +35,15 @@ router.post('/webhook', express.raw({ type: 'application/json' }), (req, res) =>
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
-router.get('/my-orders', authMiddleware , async (req, res) => {
+router.get('/my-orders', authMiddleware, async (req, res) => {
   try {
-    const userId = req.user.id;
-    const orders = await Order.find({ userId }).sort({ createdAt: -1 });
-    res.status(200).json({ orders });
+    const orders = await Order.find({ userId: req.user.id })
+      .sort({ createdAt: -1 })
+      .populate('items.productId'); // important!
+
+    res.json(orders);
   } catch (error) {
-    console.error('Fetching user orders error:', error);
-    res.status(500).json({ message: 'Something went wrong' });
+    res.status(500).json({ message: 'Failed to fetch orders' });
   }
 });
 

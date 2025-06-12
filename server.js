@@ -1,5 +1,5 @@
 const express = require('express');
-const cors = require ('cors');
+const cors = require ( 'cors');
 require('dotenv').config();
 const axios = require('axios');
 const mongoose = require('mongoose');
@@ -15,18 +15,19 @@ const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/product');
 const offerRoutes = require('./routes/offer');
 const paymentRoutes = require('./routes/paymentRoutes');
+const userRoutes = require('./routes/userRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 const User = require('./models/User');
 
 const app = express();
 const JWT_SECRET = process.env.JWT_SECRET;
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-app.use('/api/payment', paymentRoutes);
-
-
 app.use(cors({
   origin: process.env.FRONTEND_URL,
-  credentials: true
+  credentials: true,
+  methods: [ 'GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
@@ -49,7 +50,9 @@ app.use('/api/email-otp', emailOtpRoute);
 app.use('/api/orders', orderRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/offers', offerRoutes);
-
+app.use('/api/payment', paymentRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.post('/api/auth/google', async (req, res) => {
   try {

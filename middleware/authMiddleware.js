@@ -2,8 +2,8 @@ const jwt = require('jsonwebtoken'); // ✅ Required
 const User = require('../models/User');
 const JWT_SECRET = process.env.JWT_SECRET;
 const authMiddleware = async (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  console.log("Authorization header:", authHeader); // 👈 log
+const authHeader = req.headers.authorization;
+console.log("Authorization header:", authHeader); // 👈 log
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ message: 'Authorization token missing or invalid' });
@@ -29,5 +29,15 @@ const authMiddleware = async (req, res, next) => {
     res.status(401).json({ message: 'Token is invalid or expired' });
   }
 };
+const isAdmin = (req, res, next) => {
+   if (req.user && req.user.isAdmin) {
+    next();
+  } else {
+    console.log("User is not admin");
+    return res.status(403).json({ message: 'Access denied. Admins only.' });
+  }
+};
 
-module.exports = { authMiddleware };
+
+
+module.exports = { authMiddleware, isAdmin };

@@ -4,6 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const Product = require('../models/Product');
 
+// Multer Storage Setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'public/uploads/');
@@ -16,11 +17,23 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// CREATE Product
-router.post('/add', upload.single('image'), async (req, res) => {
+// CREATE Product with Multiple Images
+router.post('/add', upload.array('images', 5), async (req, res) => {
   try {
-    const { name, description, mrp, discount, inStock, category } = req.body;
+    const {
+      name,
+      description,
+      mrp,
+      discount,
+      inStock,
+      category,
+      unit,
+      ingredients,
+      nutritionalInfo,
+    } = req.body;
+
     const price = mrp - (mrp * discount) / 100;
+    const imagePaths = req.files.map(file => `/uploads/${file.filename}`);
 
     const newProduct = new Product({
       name,
@@ -28,9 +41,12 @@ router.post('/add', upload.single('image'), async (req, res) => {
       mrp,
       discount,
       price,
+      unit,
+      ingredients,
+      nutritionalInfo,
       inStock: inStock === 'true',
       category,
-      image: `/uploads/${req.file.filename}`,
+      images: imagePaths,
     });
 
     await newProduct.save();
@@ -40,7 +56,6 @@ router.post('/add', upload.single('image'), async (req, res) => {
     res.status(500).json({ message: 'Failed to add product' });
   }
 });
-
 
 // GET All Products
 router.get('/', async (req, res) => {
@@ -53,4 +68,35 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET Single Product by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    res.json(product);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
+// GET related products by category (excluding current product)
+router.get('/related/:productId', async (req, res) => {
+  const { productId } = req.params;
+
+  try {
+    const mainProduct = await Product.findById(productId);
+    if (!mainProduct) return res.status(404).json ({ message: 'Product not found' });
+
+    const relatedProducts = await Product.find({
+      category: mainProduct.category,
+      _id: { $ne: productId },
+    }).limit(6);
+
+    res.json(relatedProducts);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+ });
+
+
 module.exports = router;
+
