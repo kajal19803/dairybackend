@@ -1,12 +1,12 @@
 const express = require('express');
-const crypto = require('crypto');
+const crypto = require ('crypto');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const Order = require('../models/Order');
 
 
 const router = express.Router();
 
-// Raw body parser is needed for webhook verification
+
 router.post ('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   try {
     const signature = req.headers['x-cashfree-signature'];
@@ -14,7 +14,7 @@ router.post ('/webhook', express.raw({ type: 'application/json' }), (req, res) =
 
     const payload = req.body.toString('utf-8');
 
-    // Verify signature
+    
     const hmac = crypto.createHmac('sha256', secret);
     hmac.update(payload);
     const digest = hmac.digest('base64');
@@ -24,11 +24,10 @@ router.post ('/webhook', express.raw({ type: 'application/json' }), (req, res) =
       return res.status(400).json({ error: 'Invalid signature' });
     }
 
-    const data = JSON.parse(payload); // Now it's safe to parse
+    const data = JSON.parse(payload); 
     console.log('✅ Webhook received:', data);
 
-    // TODO: Update order/payment status in DB based on `data.order.order_id` or `data.payment.payment_status`
-
+   
     res.status(200).json({ status: 'Webhook received successfully' });
   } catch (err) {
     console.error('❌ Webhook Error:', err);
@@ -39,13 +38,33 @@ router.get('/my-orders', authMiddleware, async (req, res) => {
   try {
     const orders = await Order.find({ userId: req.user.id })
       .sort({ createdAt: -1 })
-      .populate('items.productId'); // important!
+      .populate('items.productId'); 
 
-    res.json(orders);
+    res.json({ orders }); 
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch orders' });
   }
 });
+ router.get('/recent', authMiddleware, async (req, res) => {
+  try {
+    const orders = await Order.find({ userId: req.user._id })
+      .sort({ createdAt: -1 })
+      .limit(3)
+      .select('_id items') 
+      .populate('items.productId', 'name');
+    const formattedOrders = orders.map(order => ({
+      orderId: order._id,
+      productNames: order.items.map(item => item.productId?.name || 'Unknown Product'),
+    }));
+
+    res.json({ orders: formattedOrders });
+  } catch (err) {
+    console.error('❌ Error in /recent:', err);
+    res.status(500).json({ message: 'Error fetching orders' });
+  }
+});
+
+
 
 
 module.exports = router;

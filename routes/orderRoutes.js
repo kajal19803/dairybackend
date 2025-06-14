@@ -3,7 +3,7 @@ const router = express.Router();
 const Order = require('../models/Order');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const axios = require('axios');
-require('dotenv').config();
+require ('dotenv').config();
 
 // Create new order after user confirms cart
 router.post('/orders', authMiddleware, async (req, res) => {
@@ -12,7 +12,7 @@ router.post('/orders', authMiddleware, async (req, res) => {
     const userId = req.user.id;
 
     if (!items || !address || !totalPrice) {
-      return res.status(400).json({ message: 'Missing order details' });
+      return res.status(400).json ({ message: 'Missing order details' });
     }
 
     const orderId = `ORDER_${Date.now()}`;

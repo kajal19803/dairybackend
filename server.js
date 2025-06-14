@@ -17,6 +17,10 @@ const offerRoutes = require('./routes/offer');
 const paymentRoutes = require('./routes/paymentRoutes');
 const userRoutes = require('./routes/userRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const chatRoutes = require('./routes/chatRoutes');
+const ticketRoutes = require('./routes/ticketRoutes');
+const shiprocketRoutes = require('./routes/shiprocketRoutes');
+const webhookRoutes = require('./routes/webhook');
 const User = require('./models/User');
 
 const app = express();
@@ -51,8 +55,12 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/payment', webhookRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/tickets', ticketRoutes);
+app.use('/api/shiprocket', shiprocketRoutes);
 
 app.post('/api/auth/google', async (req, res) => {
   try {
