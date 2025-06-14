@@ -26,7 +26,7 @@ const UserSchema = new mongoose.Schema({
     default: false,
   },
 
-  // ✅ Wishlist field
+  
   wishlist: [
     {
       type: mongoose.Schema.Types.ObjectId,

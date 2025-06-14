@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require ( 'cors');
 require('dotenv').config();
 const axios = require('axios');
-const mongoose = require('mongoose');
+const mongoose = require ('mongoose');
 const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
@@ -20,7 +20,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
 const shiprocketRoutes = require('./routes/shiprocketRoutes');
-const webhookRoutes = require('./routes/webhook');
+
 const User = require('./models/User');
 
 const app = express();
@@ -55,7 +55,6 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/payment', paymentRoutes);
-app.use('/api/payment', webhookRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/chat', chatRoutes);

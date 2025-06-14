@@ -12,7 +12,7 @@ router.post('/create-order', authMiddleware, async (req, res) => {
     const orderData = {
       order_id: req.body.orderId,
       order_date: new Date().toISOString(),
-      pickup_location: "Jabalpur Warehouse", // Must match Shiprocket pickup address name
+      pickup_location: "Jabalpur Warehouse", 
       billing_customer_name: req.body.name,
       billing_address: req.body.address,
       billing_city: req.body.city,
@@ -20,8 +20,8 @@ router.post('/create-order', authMiddleware, async (req, res) => {
       billing_pincode: req.body.pincode,
       billing_country: "India",
       billing_phone: req.body.phone,
-      order_items: req.body.items,  // Example: [{ name: 'Paneer', quantity: 2, price: 250 }]
-      payment_method: "Prepaid",    // or "COD"
+      order_items: req.body.items,  
+      payment_method: "Prepaid",    
       sub_total: req.body.total,
     };
 

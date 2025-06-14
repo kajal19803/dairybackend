@@ -4,7 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const Product = require('../models/Product');
 
-// Multer Storage Setup
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'public/uploads/');
@@ -17,7 +17,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// CREATE Product with Multiple Images
+
 router.post('/add', upload.array('images', 5), async (req, res) => {
   try {
     const {
@@ -57,7 +57,7 @@ router.post('/add', upload.array('images', 5), async (req, res) => {
   }
 });
 
-// GET All Products
+
 router.get('/', async (req, res) => {
   try {
     const products = await Product.find();
@@ -68,7 +68,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET Single Product by ID
+
 router.get('/:id', async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -78,7 +78,7 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({ message: 'Server error', error });
   }
 });
-// GET related products by category (excluding current product)
+
 router.get('/related/:productId', async (req, res) => {
   const { productId } = req.params;
 

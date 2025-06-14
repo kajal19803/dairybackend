@@ -2,9 +2,8 @@ const express = require('express');
 const nodemailer = require('nodemailer');
 const router = express.Router();
 
-const otpStore = new Map(); // Store email-OTP pairs
+const otpStore = new Map(); 
 
-// Setup nodemailer transporter
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -13,12 +12,12 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Send OTP route
+
 router.post('/send', async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ message: 'Email is required' });
 
-  const otp = Math.floor(100000 + Math.random() * 900000); // 6 digit OTP
+  const otp = Math.floor(100000 + Math.random() * 900000); 
   otpStore.set(email, otp);
 
   const mailOptions = {
@@ -30,7 +29,7 @@ router.post('/send', async (req, res) => {
 
   try {
     await transporter.sendMail(mailOptions);
-    // Set OTP expiration (5 mins)
+    
     setTimeout(() => otpStore.delete(email), 5 * 60 * 1000);
     res.json({ message: 'OTP sent successfully' });
   } catch (error) {
@@ -39,7 +38,7 @@ router.post('/send', async (req, res) => {
   }
 });
 
-// Verify OTP route
+
 router.post('/verify', (req, res) => {
   const { email, otp } = req.body;
 

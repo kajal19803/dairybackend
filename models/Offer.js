@@ -5,7 +5,7 @@ const offerSchema = new mongoose.Schema({
   description: String,
   imageUrl: String,
   discount: String,
-  productLink: String, // OR you can use productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' }
+  productLink: String,
 }, { timestamps: true });
 
 module.exports = mongoose.model('Offer', offerSchema);

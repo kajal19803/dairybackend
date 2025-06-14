@@ -23,7 +23,7 @@ router.post('/', async (req, res) => {
   const needsTicket = /refund|problem|issue|not delivered|damaged|return|cancel|payment/i.test(userMessage);
   const predefinedReply = getWebsiteReply(userMessage);
 
-  // If static reply exists
+  
   if (predefinedReply) {
     if (needsTicket) {
       if (!isLoggedIn) {
@@ -42,7 +42,7 @@ router.post('/', async (req, res) => {
     return res.json({ reply: predefinedReply });
   }
 
-  // Otherwise use HuggingFace AI
+  
   const headers = {
     Authorization: `Bearer ${process.env.HUGGINGFACE_API_TOKEN}`,
     'Content-Type': 'application/json',
@@ -68,7 +68,7 @@ router.post('/', async (req, res) => {
     if (needsTicket) {
       if (!isLoggedIn) {
         return res.json({
-          reply: '⚠️ Please login to raise a support ticket.',
+          reply: 'Please login to raise a support ticket.',
           askToRaiseTicket: false,
         });
       }
@@ -81,7 +81,7 @@ router.post('/', async (req, res) => {
 
     res.json({ reply: cleanReply });
   } catch (error) {
-    console.error('🤖 HuggingFace API Error:', error.message);
+    console.error(' HuggingFace API Error:', error.message);
     res.status(500).json({ reply: 'Something went wrong. Try again later.' });
   }
 });

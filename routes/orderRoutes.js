@@ -5,7 +5,7 @@ const { authMiddleware } = require('../middleware/authMiddleware');
 const axios = require('axios');
 require ('dotenv').config();
 
-// Create new order after user confirms cart
+
 router.post('/orders', authMiddleware, async (req, res) => {
   try {
     const { items, address, totalPrice ,phone } = req.body;

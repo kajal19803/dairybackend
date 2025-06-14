@@ -17,7 +17,7 @@ const verifyToken = (req) => {
   return jwt.verify(token, JWT_SECRET);
 };
 
-// ✅ Updated: User contact info update route
+
 router.put('/update-contact' ,async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -41,10 +41,9 @@ router.put('/update-contact' ,async (req, res) => {
     const user = await User.findById(decoded.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Merge phoneNumbers (avoid duplicates)
+    
     user.phoneNumber = [...new Set([...(user.phoneNumber || []), ...phoneNumbers])];
 
-    // Merge addresses (avoid duplicates using JSON.stringify)
     const existingAddresses = user.address?.map(addr => JSON.stringify(addr)) || [];
     const newAddresses = addresses
       .map(addr => JSON.stringify(addr))
@@ -84,7 +83,7 @@ router.delete('/remove-phone', authMiddleware , async (req, res) => {
   }
 });
 
-// ✅ DELETE address (match by full structure)
+
 router.delete('/remove-address', authMiddleware , async (req, res) => {
   try {
     const decoded = verifyToken(req);
