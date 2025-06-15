@@ -6,22 +6,37 @@ const Order = require('../models/Order');
 const webhookRouter = express.Router();
 const router = express.Router();
 
-
-webhookRouter.post('/', express.raw({ type: '*/*' }), async (req, res) => {
+ webhookRouter.post('/', express.raw({ type: '*/*' }), async (req, res) => {
   try {
+    console.log('📩 Webhook route hit');
+
     const signature = req.headers['x-cashfree-signature'];
     const secret = process.env.CASHFREE_SECRET;
 
-    if (!secret) return res.status(500).send('Secret missing');
-    if (!signature) return res.status(400).send('Signature header missing');
+    console.log('🔐 Retrieved secret:', secret ? '[HIDDEN]' : '❌ MISSING');
+    console.log('📬 Signature received:', signature || '❌ MISSING');
+
+    if (!secret) {
+      console.log('❌ Missing Cashfree secret');
+      return res.status(500).send('Secret missing');
+    }
+
+    if (!signature) {
+      console.log('❌ Missing signature header');
+      return res.status(400).send('Signature header missing');
+    }
 
     const payload = req.body.toString('utf-8');
+    console.log('📦 Raw Payload:', payload);
 
     const hmac = crypto.createHmac('sha256', secret).update(payload).digest('base64');
+    console.log('🔏 Generated HMAC:', hmac);
 
-    // 🛡️ Prevent crashing on length mismatch
     const hmacBuffer = Buffer.from(hmac);
     const signatureBuffer = Buffer.from(signature);
+
+    console.log('📏 HMAC Length:', hmacBuffer.length);
+    console.log('📏 Signature Length:', signatureBuffer.length);
 
     if (hmacBuffer.length !== signatureBuffer.length) {
       console.log('❌ Signature format mismatch');
@@ -29,6 +44,8 @@ webhookRouter.post('/', express.raw({ type: '*/*' }), async (req, res) => {
     }
 
     const isValid = crypto.timingSafeEqual(hmacBuffer, signatureBuffer);
+    console.log('🔍 Signature validity:', isValid);
+
     if (!isValid) {
       console.log('❌ Signature mismatch');
       return res.status(400).send('Invalid signature');
@@ -37,13 +54,14 @@ webhookRouter.post('/', express.raw({ type: '*/*' }), async (req, res) => {
     const data = JSON.parse(payload);
     console.log('✅ Verified Webhook:', data);
 
-    // ✅ Proceed to logic here (e.g. update order status if needed)
+    // 🚀 You can now process the webhook data
     return res.status(200).send('Webhook received');
   } catch (err) {
-    console.error('❌ Webhook error:', err);
+    console.error('❌ Webhook error:', err.message);
     return res.status(500).send('Internal error');
   }
 });
+
 
 
 
