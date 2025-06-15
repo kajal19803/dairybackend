@@ -1,56 +1,69 @@
 const express = require('express');
-const crypto = require ('crypto');
+const crypto = require('crypto');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const Order = require('../models/Order');
 
-
+const webhookRouter = express.Router();
 const router = express.Router();
 
-router.post ('/webhook', express.raw({ type: 'application/json' }), (req, res) =>{
+
+webhookRouter.post('/', express.raw({ type: '*/*' }), async (req, res) => {
   try {
-    const signature = req.headers ['x-cashfree-signature'];
+    const signature = req.headers['x-cashfree-signature'];
     const secret = process.env.CASHFREE_SECRET;
 
+    if (!secret) return res.status(500).send('Secret missing');
+
     const payload = req.body.toString('utf-8');
+    const hmac = crypto.createHmac('sha256', secret).update(payload).digest('base64');
 
     
-    const hmac = crypto.createHmac('sha256', secret);
-    hmac.update(payload);
-    const digest = hmac.digest('base64');
-
-    if (signature !== digest) {
-      console.error('Webhook signature mismatch');
-      return res.status(400).json({ error: 'Invalid signature' });
+    if (!hmac || !signature || hmac.length !== signature.length) {
+      console.log('❌ Signature format mismatch');
+      return res.status(400).send('Invalid signature format');
     }
 
-    const data = JSON.parse(payload); 
-    console.log('✅ Webhook received:', data);
+    const isValid = crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(signature));
+    if (!isValid) {
+      console.log('❌ Signature mismatch');
+      return res.status(400).send('Invalid signature');
+    }
 
-   
-    res.status(200).json({ status: 'Webhook received successfully' });
+    const data = JSON.parse(payload);
+    console.log('✅ Verified Webhook:', data);
+
+    
+
+    return res.status(200).send('Webhook received');
   } catch (err) {
-    console.error('❌ Webhook Error:', err);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('❌ Webhook error:', err);
+    return res.status(500).send('Internal error');
   }
 });
+
+
 router.get('/my-orders', authMiddleware, async (req, res) => {
   try {
     const orders = await Order.find({ userId: req.user.id })
       .sort({ createdAt: -1 })
-      .populate('items.productId'); 
+      .populate('items.productId');
 
-    res.json({ orders }); 
+    res.json({ orders });
   } catch (error) {
+    console.error('❌ Error fetching my-orders:', error);
     res.status(500).json({ message: 'Failed to fetch orders' });
   }
 });
- router.get('/recent', authMiddleware, async (req, res) => {
+
+// 🕒 Get 3 most recent orders for chatbot/ticket
+router.get('/recent', authMiddleware, async (req, res) => {
   try {
     const orders = await Order.find({ userId: req.user._id })
       .sort({ createdAt: -1 })
       .limit(3)
-      .select('_id items') 
+      .select('_id items')
       .populate('items.productId', 'name');
+
     const formattedOrders = orders.map(order => ({
       orderId: order._id,
       productNames: order.items.map(item => item.productId?.name || 'Unknown Product'),
@@ -63,7 +76,5 @@ router.get('/my-orders', authMiddleware, async (req, res) => {
   }
 });
 
-
-
-
 module.exports = router;
+module.exports.webhookOnly = webhookRouter;
