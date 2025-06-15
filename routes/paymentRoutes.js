@@ -6,11 +6,10 @@ const Order = require('../models/Order');
 
 const router = express.Router();
 
-
-router.post ('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+router.post ('/webhook', express.raw({ type: 'application/json' }), (req, res) =>{
   try {
-    const signature = req.headers['x-cashfree-signature'];
-    const secret = process.env.CASHFREE_CLIENT_SECRET;
+    const signature = req.headers ['x-cashfree-signature'];
+    const secret = process.env.CASHFREE_SECRET;
 
     const payload = req.body.toString('utf-8');
 
