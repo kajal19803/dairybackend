@@ -5,7 +5,7 @@ const { authMiddleware } = require('../middleware/authMiddleware');
 const axios = require('axios');
 require('dotenv').config();
 
-// 📦 Place Order Route
+// 📦 1. Place Order Route
 router.post('/orders', authMiddleware, async (req, res) => {
   try {
     const { items, address, totalPrice, phone } = req.body;
@@ -16,7 +16,6 @@ router.post('/orders', authMiddleware, async (req, res) => {
     }
 
     const orderId = `ORDER_${Date.now()}`;
-
     const newOrder = new Order({
       orderId,
       userId,
@@ -27,8 +26,6 @@ router.post('/orders', authMiddleware, async (req, res) => {
       status: 'pending',
     });
 
-    console.log("📦 Order received from frontend:", req.body);
-
     const savedOrder = await newOrder.save();
     res.status(201).json({ message: 'Order placed successfully', order: savedOrder });
   } catch (error) {
@@ -37,7 +34,7 @@ router.post('/orders', authMiddleware, async (req, res) => {
   }
 });
 
-// 💳 Create Payment Link Route
+// 💳 2. Create Payment Link (Payment Link Flow)
 router.post('/payment/create-link', authMiddleware, async (req, res) => {
   try {
     const user = req.user;
@@ -63,15 +60,13 @@ router.post('/payment/create-link', authMiddleware, async (req, res) => {
         customer_id: user._id.toString(),
         customer_email: email || user.email || 'test@example.com',
         customer_phone: phone?.toString() || user.phone?.toString() || '0000000000',
-        customer_name: name || 'Customer'
+        customer_name: name || 'Customer',
       },
       order_meta: {
         notify_url: `${process.env.BACKEND_BASE_URL}/api/payment/webhook`,
-        return_url: `${process.env.FRONTEND_URL}/paymentstatus`
-      }
+        return_url: `${process.env.FRONTEND_URL}/paymentstatus`,
+      },
     };
-
-    console.log("📤 Sending to Cashfree:", data);
 
     const headers = {
       'x-client-id': process.env.CASHFREE_APP_ID,
@@ -82,24 +77,16 @@ router.post('/payment/create-link', authMiddleware, async (req, res) => {
 
     const response = await axios.post(url, data, { headers });
 
-    let sessionId = response.data.payment_session_id;
+    const paymentLink = response.data.payment_link;
 
-    // 🛠️ Strip any invalid trailing "payment"
-    if (sessionId?.endsWith("payment")) {
-      console.warn("⚠️ Stripping invalid 'payment' suffix from session ID");
-      sessionId = sessionId.replace(/payment$/, '');
-    }
-
-    if (!sessionId) {
+    if (!paymentLink) {
       return res.status(500).json({
-        error: 'Cashfree did not return a valid session ID',
-        raw: response.data
+        error: 'Cashfree did not return a valid payment link',
+        raw: response.data,
       });
     }
 
-    const paymentLink = `https://payments.cashfree.com/pg/orders/${sessionId}`;
     res.status(200).json({ payment_link: paymentLink, orderId });
-
   } catch (error) {
     const errData = error.response?.data || error.message;
     console.error('❌ Cashfree error:', errData);
