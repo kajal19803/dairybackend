@@ -37,13 +37,12 @@ router.post('/orders', authMiddleware, async (req, res) => {
   }
 });
 
-// 💳 Cashfree Payment Link Creation Route
-router.post('/payment/create-link', authMiddleware, async (req, res) => {
+ router.post('/payment/create-link', authMiddleware, async (req, res) => {
   try {
     const user = req.user;
-    const { amount, phone } = req.body;
+    const { amount, phone, email, name } = req.body;
 
-    if (!user || !user._id || !user.email) {
+    if (!user || !user._id) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
@@ -61,8 +60,9 @@ router.post('/payment/create-link', authMiddleware, async (req, res) => {
       order_note: 'Dairy product purchase',
       customer_details: {
         customer_id: user._id.toString(),
-        customer_email: user.email,
+        customer_email: email || user.email || 'test@example.com',
         customer_phone: phone?.toString() || user.phone?.toString() || '0000000000',
+        customer_name: name || 'Customer'
       },
       order_meta: {
         notify_url: `${process.env.BACKEND_BASE_URL}/api/payment/webhook`,
@@ -81,26 +81,25 @@ router.post('/payment/create-link', authMiddleware, async (req, res) => {
 
     const response = await axios.post(url, data, { headers });
 
-    console.log("💳 Full Cashfree response:", response.data);
-
     const paymentSessionId = response.data.payment_session_id;
 
     if (!paymentSessionId) {
       return res.status(500).json({
         error: 'Cashfree did not return a payment session ID',
-        fullResponse: response.data,
+        fullResponse: response.data
       });
     }
 
     const paymentLink = `https://payments.cashfree.com/pg/orders/${paymentSessionId}`;
-
     res.status(200).json({ payment_link: paymentLink, orderId });
+
   } catch (error) {
     const errData = error.response?.data || error.message;
     console.error('❌ Cashfree error:', errData);
     res.status(500).json({ error: 'Failed to create payment link', details: errData });
   }
 });
+
 
 module.exports = router;
 
