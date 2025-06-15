@@ -66,8 +66,9 @@ router.post('/payment/create-link', authMiddleware, async (req, res) => {
       },
       order_meta: {
         notify_url: `${process.env.BACKEND_BASE_URL}/api/payment/webhook`,
-        return_url: `${process.env.FRONTEND_URL}/paymentstatus?order_id=${orderId}&order_token={order_token}&order_status={order_status}`,
-      },
+        return_url: `${process.env.FRONTEND_URL}/paymentstatus`
+      }
+
     };
 
     console.log("Sending to Cashfree:", data);
