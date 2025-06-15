@@ -78,6 +78,7 @@ router.post('/payment/create-link', authMiddleware, async (req, res) => {
     };
 
     const response = await axios.post(url, data, { headers });
+    console.log("💳 Full Cashfree response:", response.data);
 
     const paymentLink = response.data.payment_link;
 
