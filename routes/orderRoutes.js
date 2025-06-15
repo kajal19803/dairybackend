@@ -3,16 +3,15 @@ const router = express.Router();
 const Order = require('../models/Order');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const axios = require('axios');
-require ('dotenv').config();
-
+require('dotenv').config();
 
 router.post('/orders', authMiddleware, async (req, res) => {
   try {
-    const { items, address, totalPrice ,phone } = req.body;
+    const { items, address, totalPrice, phone } = req.body;
     const userId = req.user.id;
 
     if (!items || !address || !totalPrice) {
-      return res.status(400).json ({ message: 'Missing order details' });
+      return res.status(400).json({ message: 'Missing order details' });
     }
 
     const orderId = `ORDER_${Date.now()}`;
@@ -32,17 +31,15 @@ router.post('/orders', authMiddleware, async (req, res) => {
     const savedOrder = await newOrder.save();
     res.status(201).json({ message: 'Order placed successfully', order: savedOrder });
   } catch (error) {
-    console.error('Order creation error:', error);
+    console.error('❌ Order creation error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
-
 
 router.post('/payment/create-link', authMiddleware, async (req, res) => {
   try {
     const user = req.user;
     const { amount, phone } = req.body;
-
 
     if (!user || !user._id || !user.email) {
       return res.status(401).json({ error: 'User not authenticated' });
@@ -63,18 +60,16 @@ router.post('/payment/create-link', authMiddleware, async (req, res) => {
       customer_details: {
         customer_id: user._id.toString(),
         customer_email: user.email,
-        customer_phone: phone ? phone.toString() : user.phone?.toString(),
-
+        customer_phone: phone?.toString() || user.phone?.toString() || '0000000000',
       },
-        order_note: "Dairy product purchase",
-        order_meta: {
-        notify_url: `${process.env.BACKEND_BASE_URL}/api/payment/webhook`
-        },
+      order_meta: {
+        notify_url: `${process.env.BACKEND_BASE_URL}/api/payment/webhook`,
+      },
       return_url: `${process.env.FRONTEND_URL}/paymentstatus?order_id=${orderId}&order_token={order_token}&order_status={order_status}`,
-
-
     };
+
     console.log("📤 Sending to Cashfree:", data);
+
     const headers = {
       'x-client-id': process.env.CASHFREE_APP_ID,
       'x-client-secret': process.env.CASHFREE_SECRET,
@@ -90,15 +85,12 @@ router.post('/payment/create-link', authMiddleware, async (req, res) => {
       return res.status(500).json({ error: 'Cashfree did not return a payment link' });
     }
 
-    
     res.status(200).json({ payment_link: paymentLink, orderId });
   } catch (error) {
     const errData = error.response?.data || error.message;
-    console.error('Cashfree error:', errData);
+    console.error('❌ Cashfree error:', errData);
     res.status(500).json({ error: 'Failed to create payment link', details: errData });
   }
 });
 
-
 module.exports = router;
-
