@@ -66,6 +66,10 @@ router.post('/payment/create-link', authMiddleware, async (req, res) => {
         customer_phone: phone ? phone.toString() : user.phone?.toString(),
 
       },
+        order_note: "Dairy product purchase",
+        order_meta: {
+        notify_url: `${process.env.BACKEND_BASE_URL}/api/payment/webhook`
+        },
       return_url: `${process.env.FRONTEND_URL}/paymentstatus?order_id=${orderId}&order_token={order_token}&order_status={order_status}`,
 
 
@@ -74,7 +78,7 @@ router.post('/payment/create-link', authMiddleware, async (req, res) => {
     const headers = {
       'x-client-id': process.env.CASHFREE_APP_ID,
       'x-client-secret': process.env.CASHFREE_SECRET,
-      'x-api-version': '2022-01-01',
+      'x-api-version': '2023-08-01',
       'Content-Type': 'application/json',
     };
 
