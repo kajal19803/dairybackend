@@ -37,7 +37,8 @@ router.post('/orders', authMiddleware, async (req, res) => {
   }
 });
 
- router.post('/payment/create-link', authMiddleware, async (req, res) => {
+// 💳 Create Payment Link Route
+router.post('/payment/create-link', authMiddleware, async (req, res) => {
   try {
     const user = req.user;
     const { amount, phone, email, name } = req.body;
@@ -81,16 +82,22 @@ router.post('/orders', authMiddleware, async (req, res) => {
 
     const response = await axios.post(url, data, { headers });
 
-    const paymentSessionId = response.data.payment_session_id;
+    let sessionId = response.data.payment_session_id;
 
-    if (!paymentSessionId) {
+    // 🛠️ Strip any invalid trailing "payment"
+    if (sessionId?.endsWith("payment")) {
+      console.warn("⚠️ Stripping invalid 'payment' suffix from session ID");
+      sessionId = sessionId.replace(/payment$/, '');
+    }
+
+    if (!sessionId) {
       return res.status(500).json({
-        error: 'Cashfree did not return a payment session ID',
-        fullResponse: response.data
+        error: 'Cashfree did not return a valid session ID',
+        raw: response.data
       });
     }
 
-    const paymentLink = `https://payments.cashfree.com/pg/orders/${paymentSessionId}`;
+    const paymentLink = `https://payments.cashfree.com/pg/orders/${sessionId}`;
     res.status(200).json({ payment_link: paymentLink, orderId });
 
   } catch (error) {
@@ -100,7 +107,4 @@ router.post('/orders', authMiddleware, async (req, res) => {
   }
 });
 
-
 module.exports = router;
-
-
