@@ -13,17 +13,22 @@ webhookRouter.post('/', express.raw({ type: '*/*' }), async (req, res) => {
     const secret = process.env.CASHFREE_SECRET;
 
     if (!secret) return res.status(500).send('Secret missing');
+    if (!signature) return res.status(400).send('Signature header missing');
 
     const payload = req.body.toString('utf-8');
+
     const hmac = crypto.createHmac('sha256', secret).update(payload).digest('base64');
 
-    
-    if (!hmac || !signature || hmac.length !== signature.length) {
+    // 🛡️ Prevent crashing on length mismatch
+    const hmacBuffer = Buffer.from(hmac);
+    const signatureBuffer = Buffer.from(signature);
+
+    if (hmacBuffer.length !== signatureBuffer.length) {
       console.log('❌ Signature format mismatch');
       return res.status(400).send('Invalid signature format');
     }
 
-    const isValid = crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(signature));
+    const isValid = crypto.timingSafeEqual(hmacBuffer, signatureBuffer);
     if (!isValid) {
       console.log('❌ Signature mismatch');
       return res.status(400).send('Invalid signature');
@@ -32,14 +37,14 @@ webhookRouter.post('/', express.raw({ type: '*/*' }), async (req, res) => {
     const data = JSON.parse(payload);
     console.log('✅ Verified Webhook:', data);
 
-    
-
+    // ✅ Proceed to logic here (e.g. update order status if needed)
     return res.status(200).send('Webhook received');
   } catch (err) {
     console.error('❌ Webhook error:', err);
     return res.status(500).send('Internal error');
   }
 });
+
 
 
 router.get('/my-orders', authMiddleware, async (req, res) => {
