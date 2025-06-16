@@ -20,7 +20,6 @@ const adminRoutes = require('./routes/adminRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
 const shiprocketRoutes = require('./routes/shiprocketRoutes');
-const paymentWebhookRoute = require('./routes/paymentRoutes').webhookOnly;
 
 const User = require('./models/User');
 
@@ -34,7 +33,9 @@ app.use(cors({
   methods: [ 'GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use('/api/payment/webhook', paymentWebhookRoute);
+const paymentWebhookRoute = require('./routes/paymentRoutes').webhookOnly;
+app.use('/api/payment/webhook', express.raw({ type: '*/*' }), paymentWebhookRoute);
+
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
