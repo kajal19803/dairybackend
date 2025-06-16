@@ -1,6 +1,6 @@
 const express = require('express');
 const crypto = require('crypto');
-const { authMiddleware } = require('../middleware/authMiddleware');
+const { authMiddleware } = require ('../middleware/authMiddleware');
 const Order = require('../models/Order');
 
 const webhookRouter = express.Router();
@@ -10,7 +10,7 @@ const router = express.Router();
   try {
     console.log('📩 Webhook route hit');
 
-    const signature = req.headers['x-cashfree-signature'];
+    const signature = req.headers['x-webhook-signature'];
     const secret = process.env.CASHFREE_SECRET;
 
     console.log('🔐 Retrieved secret:', secret ? '[HIDDEN]' : '❌ MISSING');
