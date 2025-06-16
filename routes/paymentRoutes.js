@@ -7,39 +7,32 @@ const webhookRouter = express.Router();
 const router = express.Router();
 
  webhookRouter.post('/', express.raw({ type: '*/*' }), async (req, res) => {
-  try {
+ try {
     console.log('📩 Webhook route hit');
 
     const signature = req.headers['x-webhook-signature'];
-    const secret = process.env.CASHFREE_SECRET;
+    const secret = process.env.CASHFREE_WEBHOOK_SECRET; // ✅ Use correct secret
 
     console.log('🔐 Retrieved secret:', secret ? '[HIDDEN]' : '❌ MISSING');
     console.log('📬 Signature received:', signature || '❌ MISSING');
 
-    if (!secret) {
-      console.log('❌ Missing Cashfree secret');
-      return res.status(500).send('Secret missing');
-    }
-
-    if (!signature) {
-      console.log('❌ Missing signature header');
-      return res.status(400).send('Signature header missing');
+    if (!secret || !signature) {
+      return res.status(400).send('Missing secret or signature');
     }
 
     const payload = req.body.toString('utf-8');
     console.log('📦 Raw Payload:', payload);
 
-    const hmac = crypto.createHmac('sha256', secret).update(payload).digest('base64');
-    console.log('🔏 Generated HMAC:', hmac);
+    const generatedHmac = crypto
+      .createHmac('sha256', secret)
+      .update(payload)
+      .digest('base64');
 
-    const hmacBuffer = Buffer.from(hmac);
+    const hmacBuffer = Buffer.from(generatedHmac);
     const signatureBuffer = Buffer.from(signature);
 
-    console.log('📏 HMAC Length:', hmacBuffer.length);
-    console.log('📏 Signature Length:', signatureBuffer.length);
-
     if (hmacBuffer.length !== signatureBuffer.length) {
-      console.log('❌ Signature format mismatch');
+      console.log('❌ Signature length mismatch');
       return res.status(400).send('Invalid signature format');
     }
 
@@ -54,8 +47,28 @@ const router = express.Router();
     const data = JSON.parse(payload);
     console.log('✅ Verified Webhook:', data);
 
-    // 🚀 You can now process the webhook data
-    return res.status(200).send('Webhook received');
+    const orderId = data?.data?.order?.order_id;
+    const paymentStatus = data?.data?.payment?.payment_status;
+
+    if (!orderId || !paymentStatus) {
+      console.log('⚠️ Missing orderId or paymentStatus');
+      return res.status(400).send('Invalid data');
+    }
+
+    // ✅ Update DB
+    const updated = await Order.findOneAndUpdate(
+      { orderId },
+      { status: paymentStatus.toLowerCase() },
+      { new: true }
+    );
+
+    if (updated) {
+      console.log(`📦 Order ${orderId} updated to status: ${paymentStatus}`);
+    } else {
+      console.log(`❗ Order ${orderId} not found in DB`);
+    }
+
+    return res.status(200).send('Webhook processed');
   } catch (err) {
     console.error('❌ Webhook error:', err.message);
     return res.status(500).send('Internal error');
