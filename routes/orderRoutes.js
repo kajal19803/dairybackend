@@ -6,13 +6,13 @@ const axios = require('axios');
 require('dotenv').config();
 
 // 📦 1. Place Order Route
-router.post('/orders', authMiddleware, async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   try {
     const { items, address, totalPrice, phone } = req.body;
     const userId = req.user.id;
 
     if (!items || !address || !totalPrice) {
-      return res.status(400).json({ message: 'Missing order details' });
+      return res.status(400).json ({ message: 'Missing order details' });
     }
 
     const orderId = `ORDER_${Date.now()}`;
@@ -34,11 +34,11 @@ router.post('/orders', authMiddleware, async (req, res) => {
   }
 });
 
-// 💳 2. Create Payment Link (Payment Link Flow)
+
 router.post('/payment/create-link', authMiddleware, async (req, res) => {
   try {
     const user = req.user;
-    const { amount, phone, email, name } = req.body;
+    const { amount, phone, email, name, orderId: providedOrderId } = req.body;
 
     if (!user || !user._id) {
       return res.status(401).json({ error: 'User not authenticated' });
@@ -48,7 +48,7 @@ router.post('/payment/create-link', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Invalid amount' });
     }
 
-    const orderId = `order_${Date.now()}`;
+    const orderId = providedOrderId || `order_${Date.now()}`;
     const url = 'https://api.cashfree.com/pg/orders';
 
     const data = {
@@ -63,8 +63,8 @@ router.post('/payment/create-link', authMiddleware, async (req, res) => {
         customer_name: name || 'Customer',
       },
       order_meta: {
-        notify_url: `${process.env.BACKEND_BASE_URL}/api/payment/webhook`,
-        return_url: `${process.env.FRONTEND_URL}/paymentstatus`,
+        notify_url: "https://dairybackend-jxab.onrender.com/api/payment/webhook",
+        return_url: "https://dairyfrontend.onrender.com/paymentstatus",
       },
     };
 
@@ -77,21 +77,23 @@ router.post('/payment/create-link', authMiddleware, async (req, res) => {
 
     const response = await axios.post(url, data, { headers });
 
-    const paymentLink = response.data.payment_link;
+    const sessionId = response.data.payment_session_id;
 
-    if (!paymentLink) {
+    if (!sessionId) {
       return res.status(500).json({
-        error: 'Cashfree did not return a valid payment link',
+        error: 'Cashfree did not return a session ID',
         raw: response.data,
       });
     }
 
-    res.status(200).json({ payment_link: paymentLink, orderId });
+    res.status(200).json({ session_id: sessionId, orderId });
   } catch (error) {
     const errData = error.response?.data || error.message;
     console.error('❌ Cashfree error:', errData);
-    res.status(500).json({ error: 'Failed to create payment link', details: errData });
+    res.status(500).json({ error: 'Failed to create payment session', details: errData });
   }
 });
+
+
 
 module.exports = router;
