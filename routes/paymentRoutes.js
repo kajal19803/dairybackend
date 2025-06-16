@@ -6,6 +6,15 @@ require('dotenv').config();
 const webhookRouter = express.Router();
 const router = express.Router();
 
+webhookRouter.use('/', (req, res, next) => {
+  if (req.headers['content-encoding']) {
+    console.warn('⚠️ Stripping content-encoding header:', req.headers['content-encoding']);
+    delete req.headers['content-encoding'];
+  }
+  next();
+});
+
+
  webhookRouter.post('/', express.raw({ type: '*/*' }), async (req, res) => {
  try {
     console.log('\n📩 Webhook route hit');

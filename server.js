@@ -8,7 +8,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const path = require('path');
 
-
+console.log('🔑 [DEPLOY] Webhook Secret Loaded:', process.env.CASHFREE_WEBHOOK_SECRET ? '✅ PRESENT' : '❌ MISSING');
 const emailOtpRoute = require('./routes/emailOtp');
 const orderRoutes = require('./routes/orderRoutes');
 const authRoutes = require('./routes/auth');
