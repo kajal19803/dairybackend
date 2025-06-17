@@ -7,7 +7,7 @@ const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const path = require('path');
-
+const bodyParser = require('body-parser');
 const crypto = require('crypto');
 
 const Order = require('./models/Order');
@@ -39,7 +39,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use('/api/payment/webhook', express.raw({ type: '*/*' }), async (req, res) => {
+app.use('/api/payment/webhook', bodyParser.raw({ type: 'application/json' }), async (req, res) => {
  try {
     console.log('\n📩 Webhook route hit');
 
@@ -100,7 +100,7 @@ app.use('/api/payment/webhook', express.raw({ type: '*/*' }), async (req, res) =
     console.log(`📦 Updating orderId: ${orderId} to status: ${paymentStatus}`);
 
     const updated = await Order.findOneAndUpdate(
-      { orderId },
+      { orderId: orderId.toUpperCase() },
       { status: paymentStatus.toLowerCase() },
       { new: true }
     );
