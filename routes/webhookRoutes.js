@@ -1,7 +1,7 @@
 const express = require('express');
 require('dotenv').config();
 const crypto = require('crypto');
-const Order = require('./models/Order');
+const Order = require('../models/Order');
 const router = express.Router();
 
 router.post('/webhook/cashfree', express.raw({ type: 'application/json' }), async (req, res) => {
