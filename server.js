@@ -50,7 +50,7 @@ app.use ('/api/payment/webhook', express.raw({ type: 'application/json' }), asyn
 
     const generatedHmac = crypto
       .createHmac('sha256', secret)
-      .update(payload)
+      .update(rawPayload)
       .digest('base64');
 
     console.log('🔑 Generated HMAC:', generatedHmac);
@@ -77,7 +77,7 @@ app.use ('/api/payment/webhook', express.raw({ type: 'application/json' }), asyn
       return res.status(400).send('Invalid signature');
     }
 
-    const data = JSON.parse(payload);
+    const data = JSON.parse(rawPayload);
     console.log('✅ Verified Webhook Payload:', data);
 
     const orderId = data?.data?.order?.order_id;
