@@ -7,7 +7,7 @@ const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const path = require('path');
-const bodyParser = require('body-parser');
+
 const crypto = require('crypto');
 
 const Order = require('./models/Order');
@@ -29,19 +29,11 @@ const shiprocketRoutes = require('./routes/shiprocketRoutes');
 const User = require('./models/User');
 
 const app = express();
-const JWT_SECRET = process.env.JWT_SECRET;
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
-app.use(cors({
-  origin: process.env.FRONTEND_URL,
-  credentials: true,
-  methods: [ 'GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-app.use('/api/payment/webhook', bodyParser.raw({ type: 'application/json' }), async (req, res) => {
+app.use ('/api/payment/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
  try {
     console.log('\n📩 Webhook route hit');
+    const rawPayload = req.body.toString('utf-8');
+    require('fs').writeFileSync('raw-cashfree-payload.json', rawPayload);
 
     const signature = req.headers['x-webhook-signature'];
     const secret = process.env.CASHFREE_WEBHOOK_SECRET;
@@ -54,8 +46,7 @@ app.use('/api/payment/webhook', bodyParser.raw({ type: 'application/json' }), as
       return res.status(400).send('Missing secret or signature');
     }
 
-    const payload = req.body.toString('utf-8');
-    console.log('📦 Raw Payload:', payload);
+    
 
     const generatedHmac = crypto
       .createHmac('sha256', secret)
@@ -119,6 +110,15 @@ app.use('/api/payment/webhook', bodyParser.raw({ type: 'application/json' }), as
 });
 
 
+const JWT_SECRET = process.env.JWT_SECRET;
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+app.use(cors({
+  origin: process.env.FRONTEND_URL,
+  credentials: true,
+  methods: [ 'GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 
 app.use(express.json());
@@ -148,6 +148,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/shiprocket', shiprocketRoutes);
+
 
 app.post('/api/auth/google', async (req, res) => {
   try {
