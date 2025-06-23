@@ -8,7 +8,6 @@ const getShiprocketToken = async () => {
     });
 
     const token = response.data.token;
-    console.log("🚀 Shiprocket Auth Token:", token);
     return token;
   } catch (error) {
     console.error("❌ Error getting Shiprocket token:", error.response?.data || error.message);

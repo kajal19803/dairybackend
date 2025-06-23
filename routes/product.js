@@ -60,13 +60,48 @@ router.post('/add', upload.array('images', 5), async (req, res) => {
 
 router.get('/', async (req, res) => {
   try {
-    const products = await Product.find();
+    const { name, category, unit, inStock, minPrice, maxPrice, discounted } = req.query;
+
+    const filter = {};
+
+    if (name) {
+      filter.name = { $regex: name, $options: 'i' }; // case-insensitive search
+    }
+
+    if (category) {
+      filter.category = category;
+    }
+
+    if (unit) {
+      filter.unit = unit;
+    }
+
+    if (inStock === 'true') {
+      filter.inStock = true;
+    } else if (inStock === 'false') {
+      filter.inStock = false;
+    }
+
+    if (minPrice && maxPrice) {
+      filter.price = { $gte: Number(minPrice), $lte: Number(maxPrice) };
+    } else if (minPrice) {
+      filter.price = { $gte: Number(minPrice) };
+    } else if (maxPrice) {
+      filter.price = { $lte: Number(maxPrice) };
+    }
+
+    if (discounted === 'true') {
+      filter.discount = { $gt: 0 };
+    }
+
+    const products = await Product.find(filter);
     res.json(products);
   } catch (err) {
     console.error('Fetch products error:', err);
     res.status(500).json({ message: 'Failed to fetch products' });
   }
 });
+
 
 
 router.get('/:id', async (req, res) => {

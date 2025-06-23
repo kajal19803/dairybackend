@@ -121,15 +121,15 @@ router.post('/payment/create-link', authMiddleware, async (req, res) => {
         customer_name: name || 'Customer',
       },
       order_meta: {
-        notify_url: "https://dairybackend-jxab.onrender.com/api/payment/webhook",
-        return_url: "https://dairyfrontend.onrender.com/paymentstatus",
+        notify_url: `${process.env.BACKEND_BASE_URL}/webhook/cashfree`,
+        
       },
     };
 
     const headers = {
       'x-client-id': process.env.CASHFREE_APP_ID,
       'x-client-secret': process.env.CASHFREE_SECRET,
-      'x-api-version': '2023-08-01',
+      'x-api-version': '2025-01-01',
       'Content-Type': 'application/json',
     };
 

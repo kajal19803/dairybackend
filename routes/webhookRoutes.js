@@ -1,59 +1,46 @@
 const express = require('express');
-require('dotenv').config();
 const crypto = require('crypto');
+const fs = require('fs');
 const Order = require('../models/Order');
+
 const router = express.Router();
 
-router.post('/webhook/cashfree', express.raw({ type: 'application/json' }), async (req, res) => {
- try {
+// Middleware to parse JSON body correctly
+router.post('/cashfree', express.json(), async (req, res) => {
+  try {
     console.log('\n📩 Webhook route hit');
-    const rawPayload = req.body.toString('utf-8');
-    require('fs').writeFileSync('raw-cashfree-payload.json', rawPayload);
 
-    const signature = req.headers['x-webhook-signature'];
-    const secret = process.env.CASHFREE_WEBHOOK_SECRET;
-
-    console.log('🔐 Retrieved secret:', secret ? '[HIDDEN]' : '❌ MISSING');
-    console.log('📬 Signature received:', signature || '❌ MISSING');
-
-    if (!secret || !signature) {
-      console.log('❌ Either secret or signature is missing');
-      return res.status(400).send('Missing secret or signature');
-    }
-    const generatedHmac = crypto
-      .createHmac('sha256', secret)
-      .update(rawPayload)
-      .digest('base64');
-
-    console.log('🔑 Generated HMAC:', generatedHmac);
-    console.log('🔁 Received Signature:', signature);
-
-    const hmacBuffer = Buffer.from(generatedHmac);
-    const signatureBuffer = Buffer.from(signature);
-
-    console.log('📏 HMAC Buffer Length:', hmacBuffer.length);
-    console.log('📏 Signature Buffer Length:', signatureBuffer.length);
-    console.log('📤 HMAC Buffer:', hmacBuffer.toString('base64'));
-    console.log('📥 Signature Buffer:', signatureBuffer.toString('base64'));
-
-    if (hmacBuffer.length !== signatureBuffer.length) {
-      console.log('❌ Signature length mismatch');
-      return res.status(400).send('Invalid signature format');
+    const receivedSignature = req.body.signature;
+    if (!receivedSignature) {
+      console.log('❌ Missing signature in payload');
+      return res.status(400).send('Missing signature');
     }
 
-    const isValid = crypto.timingSafeEqual(hmacBuffer, signatureBuffer);
-    console.log('🔍 Signature validity:', isValid);
+    // Save raw body for debugging (optional)
+    fs.writeFileSync('raw-cashfree-payload.json', JSON.stringify(req.body, null, 2));
 
-    if (!isValid) {
-      console.log('❌ Signature mismatch (HMAC != Received Signature)');
-      return res.status(400).send('Invalid signature');
+    // Remove 'signature' from body and sort the rest
+    const dataToSign = { ...req.body };
+    delete dataToSign.signature;
+
+    const sortedKeys = Object.keys(dataToSign).sort();
+    const postData = sortedKeys.map(key => dataToSign[key]).join('');
+
+    const generatedHash = crypto.createHash('sha256').update(postData).digest('base64');
+
+    console.log('🔑 Generated Signature:', generatedHash);
+    console.log('📬 Received Signature:', receivedSignature);
+
+    if (generatedHash !== receivedSignature) {
+      console.log('❌ Signature mismatch');
+      return res.status(403).send('Invalid signature');
     }
 
-    const data = JSON.parse(rawPayload);
-    console.log('✅ Verified Webhook Payload:', data);
+    console.log('✅ Signature verified');
 
-    const orderId = data?.data?.order?.order_id;
-    const paymentStatus = data?.data?.payment?.payment_status;
+    // Access nested data
+    const orderId = req.body?.data?.order?.order_id;
+    const paymentStatus = req.body?.data?.payment?.payment_status;
 
     if (!orderId || !paymentStatus) {
       console.log('⚠️ Missing orderId or paymentStatus in payload');
@@ -79,6 +66,11 @@ router.post('/webhook/cashfree', express.raw({ type: 'application/json' }), asyn
     console.error('❌ Webhook error:', err.message);
     return res.status(500).send('Internal server error');
   }
+});
+
+// Test route
+router.get('/', (req, res) => {
+  res.send('✅ Cashfree Webhook Route is live');
 });
 
 module.exports = router;

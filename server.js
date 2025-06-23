@@ -6,7 +6,6 @@ const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const path = require('path');
-console.log('🔑 [DEPLOY] Webhook Secret Loaded:', process.env.CASHFREE_WEBHOOK_SECRET ? '✅ PRESENT' : '❌ MISSING');
 const emailOtpRoute = require('./routes/emailOtp');
 const orderRoutes = require('./routes/orderRoutes');
 const authRoutes = require('./routes/auth');
@@ -33,7 +32,7 @@ app.use(cors({
   methods: [ 'GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use('/webhook/cashfree', webhookRoutes);
+app.use('/webhook', webhookRoutes);
 
 
 app.use(express.json());

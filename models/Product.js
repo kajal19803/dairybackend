@@ -12,6 +12,7 @@ const productSchema = new mongoose.Schema({
   ingredients: { type: String },
   nutritionalInfo: { type: String },
   inStock: { type: Boolean, default: true },
+  rating: {type: Number,default: 0},
 });
 
 module.exports = mongoose.model ('Product', productSchema);
