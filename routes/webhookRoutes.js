@@ -9,30 +9,32 @@ router.post('/cashfree', express.json(), async (req, res) => {
   try {
     console.log('\n📩 Webhook route hit');
 
-    // Step 1: Get the signature from body
-    const receivedSignature = req.body.signature;
+    // ✅ STEP 1: Extract signature from header
+    const receivedSignature = req.headers['x-webhook-signature'];
     if (!receivedSignature) {
-      console.log('❌ Missing signature in body');
+      console.log('❌ Missing x-webhook-signature in headers');
       return res.status(400).send('Missing signature');
     }
 
-    // Optional: Save incoming payload for debugging
-    fs.writeFileSync('cashfree-debug.json', JSON.stringify(req.body, null, 2));
+    // ✅ STEP 2: Log payload for debug
+    console.log('📦 Payload:', JSON.stringify(req.body, null, 2));
+    fs.writeFileSync('cashfree-payload-debug.json', JSON.stringify(req.body, null, 2));
 
-    // Step 2: Prepare postData
+    // ✅ STEP 3: Recreate postData from body (excluding nothing, since no 'signature' in body)
     const dataToSign = { ...req.body };
-    delete dataToSign.signature; // Remove signature
-
     const sortedKeys = Object.keys(dataToSign).sort();
-    const postData = sortedKeys.map(key => dataToSign[key]).join('');
+    const postData = sortedKeys.map(key => {
+      return typeof dataToSign[key] === 'object'
+        ? JSON.stringify(dataToSign[key]) // Nested objects like 'data'
+        : dataToSign[key];
+    }).join('');
 
-    // Step 3: Generate SHA-256 + base64 encoded signature
+    // ✅ STEP 4: Generate SHA-256 + base64 signature
     const hash = crypto.createHash('sha256').update(postData).digest('base64');
 
     console.log('📬 Received Signature:', receivedSignature);
     console.log('🔑 Generated Signature:', hash);
 
-    // Step 4: Compare
     if (receivedSignature !== hash) {
       console.log('❌ Signature mismatch');
       return res.status(403).send('Invalid signature');
@@ -40,7 +42,7 @@ router.post('/cashfree', express.json(), async (req, res) => {
 
     console.log('✅ Signature verified');
 
-    // Step 5: Handle business logic
+    // ✅ STEP 5: Update order in DB
     const orderId = req.body?.data?.order?.order_id;
     const paymentStatus = req.body?.data?.payment?.payment_status;
 
@@ -68,6 +70,5 @@ router.post('/cashfree', express.json(), async (req, res) => {
   }
 });
 
-
-
 module.exports = router;
+
